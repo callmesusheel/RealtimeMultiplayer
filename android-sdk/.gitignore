@@ -1,6 +1,8 @@
 *.pydevproject
 .project
 .metadata
+.project.properties
+.proguard-project.txt
 bin/**
 tmp/**
 tmp/**/*
