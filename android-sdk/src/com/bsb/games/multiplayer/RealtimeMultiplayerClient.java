@@ -514,6 +514,7 @@ public class RealtimeMultiplayerClient {
 		for (PlayerBot bot : botPlayers) {
 			playerDetailsList.add(bot.getBotPlayer());
 		}
+		playerDetailsList.add(player);
 		return playerDetailsList;
 	}
 
