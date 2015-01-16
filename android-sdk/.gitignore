@@ -4,6 +4,7 @@
 .project.properties
 .proguard-project.txt
 bin/**
+gen/**
 tmp/**
 tmp/**/*
 *.tmp
