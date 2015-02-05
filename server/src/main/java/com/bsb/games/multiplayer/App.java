@@ -17,7 +17,7 @@ public class App {
 	}
 
 	public static void runServer() {
-		Server server = new Server("localhost", 10023, "/multiplayer", RealtimeApi.class);
+		Server server = new Server("localhost", 10024, "/mp", RealtimeApi.class);
 
 		try {
 			server.start();

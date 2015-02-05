@@ -10,7 +10,7 @@ import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
-import com.bsb.games.multiplayer.actions.ChatMessageAction;
+import com.bsb.games.multiplayer.actiondata.ActionRequest;
 import com.bsb.games.multiplayer.actions.CreateRoomAction;
 import com.bsb.games.multiplayer.actions.ExitRoomAction;
 import com.bsb.games.multiplayer.actions.JoinRoomAction;
@@ -20,14 +20,12 @@ import com.bsb.games.multiplayer.properties.Player;
 import com.bsb.games.multiplayer.properties.RealtimeData;
 import com.bsb.games.multiplayer.properties.Room;
 import com.bsb.games.multiplayer.response.ErrorResponse;
-import com.bsb.games.multiplayer.response.RoomResponse;
 import com.google.gson.Gson;
 
 @ServerEndpoint(value = "/realtime")
 public class RealtimeApi {
 
 	private Logger logger = Logger.getLogger(this.getClass().getName());
-	private Player player;
 
 	@OnOpen
 	public void onOpen(Session session) {
@@ -38,38 +36,29 @@ public class RealtimeApi {
 	@OnMessage
 	public void onMessage(String message, Session session) {
 		try {
-			RoomResponse response = new Gson().fromJson(message, RoomResponse.class);
-			setSessionDefaults(response.gameId, session);
-			if (player == null && response.playerDetails != null && response.playerDetails.id != null) {
-				player = new Player(response.playerDetails.id, response.playerDetails.name, session);
-			}
-			switch (response.action) {
-			case CREATEROOM:
+			ActionRequest response = new Gson().fromJson(message, ActionRequest.class);
+			switch (response.data.type) {
+			case CREATE_ROOM:
 				logger.info("CREATEROOM with session Id : " + session.getId());
 				CreateRoomAction createRoom = new CreateRoomAction();
 				createRoom.onMessage(message, session);
 				break;
-			case JOINROOM:
+			case JOIN_ROOM:
 				logger.info("JOINROOM");
 				JoinRoomAction joinRoom = new JoinRoomAction();
 				joinRoom.onMessage(message, session);
 				break;
-			case EXITROOM:
+			case EXIT_ROOM:
 				logger.info("EXITROOM");
 				ExitRoomAction exitRoomAction = new ExitRoomAction();
 				exitRoomAction.onMessage(message, session);
 				break;
-			case SENDMESSAGE:
+			case SEND_MESSAGE:
 				logger.info("SENDMESSAGE");
 				SendMessageAction sendMessageAction = new SendMessageAction();
 				sendMessageAction.onMessage(message, session);
 				break;
-			case CHATMESSAGE:
-				logger.info("CHATMESSAGE");
-				ChatMessageAction chatMessageAction = new ChatMessageAction();
-				chatMessageAction.onMessage(message, session);
-				break;
-			case MATCHMAKE:
+			case MATCH_MAKE:
 				logger.info("MATCHMAKE");
 				session.setMaxIdleTimeout(3 * 60000);
 				MatchMakeAction matchMakeAction = new MatchMakeAction();
@@ -83,19 +72,10 @@ public class RealtimeApi {
 				logger.info("DISCONNECT");
 				session.close();
 				break;
-			case ERROR:
-				logger.info("ERROR");
-				break;
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-	}
-
-	private void setSessionDefaults(String gameId, Session session) {
-//		logger.info("Session.getMaxIdleTimeout() : "+session.getMaxIdleTimeout());
-//		GameConfig gameConfig = RealtimeData.getRealtimeData().getGameConfig(gameId);
-//		session.setMaxIdleTimeout(gameConfig.getMaxIdleTimeout());
 	}
 
 	public void sendErrorResponse(String message, Session session) {

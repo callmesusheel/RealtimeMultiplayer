@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.logging.Logger;
 
-import com.bsb.games.multiplayer.actions.MultiplayerActionType;
 import com.bsb.games.multiplayer.properties.Player;
 import com.bsb.games.multiplayer.properties.RealtimeData;
 import com.bsb.games.multiplayer.properties.Room;
@@ -56,10 +55,10 @@ public abstract class PlayerBot {
 	
 	protected void sendMessage(byte[] data) {
 		SendMessageResponse sendMessageResponse = new SendMessageResponse();
-		sendMessageResponse.playerDetails = botPlayer;
-		sendMessageResponse.data = data;
-		sendMessageResponse.action = MultiplayerActionType.SENDMESSAGE;
-		sendMessageResponse.roomId = roomId;
+		sendMessageResponse.payload.sender = botPlayer;
+		sendMessageResponse.payload.data = data;
+		sendMessageResponse.payload.messageType = "SEND_MESSAGE";
+		sendMessageResponse.payload.roomId = roomId;
 		Room gameRoom = RealtimeData.getRealtimeData().getRoom(roomId);
 		for (Player gamePlayer : gameRoom.getPlayers()) {
 			Logger.getLogger(getClass().getCanonicalName()).info("gamePlayer : "+gamePlayer.getName());

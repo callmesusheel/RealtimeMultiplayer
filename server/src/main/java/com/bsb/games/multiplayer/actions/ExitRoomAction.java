@@ -5,13 +5,12 @@ import java.util.logging.Logger;
 
 import javax.websocket.Session;
 
-import com.bsb.games.multiplayer.bots.PlayerBot;
+import com.bsb.games.multiplayer.actiondata.ExitRoomRequest;
 import com.bsb.games.multiplayer.properties.Player;
 import com.bsb.games.multiplayer.properties.RealtimeData;
 import com.bsb.games.multiplayer.properties.Room;
-import com.bsb.games.multiplayer.response.ErrorResponse;
 import com.bsb.games.multiplayer.response.ExitRoomResponse;
-import com.bsb.games.multiplayer.response.RoomResponse;
+import com.bsb.games.multiplayer.response.MultiplayerActionType;
 import com.google.gson.Gson;
 
 public class ExitRoomAction {
@@ -20,12 +19,12 @@ public class ExitRoomAction {
 
 	public void onMessage(String message, Session session) {
 		try {
-			ExitRoomResponse response = new Gson().fromJson(message, ExitRoomResponse.class);
-			Player player = new Player(response.playerDetails.id, response.playerDetails.name, session);
-			if(response.playerDetails.moreDetails!=null) {
-				player.setMoreDetails(response.playerDetails.moreDetails);
+			ExitRoomRequest response = new Gson().fromJson(message, ExitRoomRequest.class);
+			Player player = new Player(response.data.user.id, response.data.user.name, session);
+			if(response.data.user.properties!=null) {
+				player.setMoreDetails(response.data.user.properties);
 			}
-			Room removeRoom = RealtimeData.getRealtimeData().getRoom(response.roomId);
+			Room removeRoom = RealtimeData.getRealtimeData().getRoom(response.data.roomId);
 			if (removeRoom != null) {
 				removeRoom.removePlayer(player);
 				sendResponseOfUserExit(player, removeRoom);
@@ -35,26 +34,19 @@ public class ExitRoomAction {
 			session.close();
 		} catch (Exception e) {
 			e.printStackTrace();
-			sendErrorResponse(message, session);
 		}
 	}
 
-	public void sendErrorResponse(String message, Session session) {
-		ErrorResponse response = new Gson().fromJson(message, ErrorResponse.class);
-		response.action = MultiplayerActionType.ERROR;
-		response.error = MultiplayerActionType.EXITROOM;
-		String responseString = new Gson().toJson(response);
-		logger.info("sendResponseOfUserExit : " + responseString);
-		session.getAsyncRemote().sendText(responseString);
-	}
-
 	public void sendResponseOfUserExit(Player leavingPlayer, Room removeRoom) throws IOException {
-		RoomResponse response = new RoomResponse();
-		response.action = MultiplayerActionType.EXITROOM;
-		response.roomId = removeRoom.getRoomId();
-		response.playerDetails.id = leavingPlayer.getId();
-		response.playerDetails.name = leavingPlayer.getName();
-		response.playerDetails.moreDetails = leavingPlayer.getMoreDetails();
+		ExitRoomResponse response = new ExitRoomResponse();
+		response.action = MultiplayerActionType.EXIT_ROOM;
+		response.messageType = "GAME";
+		response.status.success = true;
+		response.status.message = "Player left room";
+		response.payload.roomId = removeRoom.getRoomId();
+		response.payload.leavingPlayer.id = leavingPlayer.getId();
+		response.payload.leavingPlayer.name = leavingPlayer.getName();
+		response.payload.leavingPlayer.properties = leavingPlayer.getMoreDetails();
 		
 		String responseString = new Gson().toJson(response);
 		logger.info("sendResponseOfUserExit : " + responseString);
@@ -63,9 +55,6 @@ public class ExitRoomAction {
 			if (!player.getId().equals(leavingPlayer.getId())) {
 				player.getSession().getAsyncRemote().sendText(responseString);
 			}
-		}
-		for(PlayerBot bot : removeRoom.getBots()) {
-			bot.onPlayerLeaveRoom(removeRoom.getRoomId(), response.playerDetails);
 		}
 	}
 

@@ -5,13 +5,13 @@ import java.util.logging.Logger;
 
 import javax.websocket.Session;
 
+import com.bsb.games.multiplayer.actiondata.CreateRoomRequest;
 import com.bsb.games.multiplayer.properties.GameConfig;
 import com.bsb.games.multiplayer.properties.Player;
 import com.bsb.games.multiplayer.properties.RealtimeData;
 import com.bsb.games.multiplayer.properties.Room;
 import com.bsb.games.multiplayer.response.CreateRoomResponse;
-import com.bsb.games.multiplayer.response.ErrorResponse;
-import com.bsb.games.multiplayer.response.RoomResponse;
+import com.bsb.games.multiplayer.response.MultiplayerActionType;
 import com.google.gson.Gson;
 
 public class CreateRoomAction {
@@ -20,23 +20,23 @@ public class CreateRoomAction {
 
 	public void onMessage(String message, Session session) {
 		try {
-			CreateRoomResponse response = new Gson().fromJson(message, CreateRoomResponse.class);
-			Player player = new Player(response.playerDetails.id, response.playerDetails.name, session);
-			if(response.playerDetails.moreDetails!=null) {
-				player.setMoreDetails(response.playerDetails.moreDetails);
+			CreateRoomRequest response = new Gson().fromJson(message, CreateRoomRequest.class);
+			Player player = new Player(response.data.user.id, response.data.user.name, session);
+			if (response.data.user.properties != null) {
+				player.setMoreDetails(response.data.user.properties);
 			}
-			logger.info("createroom with session Id : "+session.getId());
+			logger.info("createroom with session Id : " + session.getId());
 			String roomId = Room.getRandomRoomId();
-			
-			
-			GameConfig gameConfig = RealtimeData.getRealtimeData().getGameConfig(response.gameId);
+
+			GameConfig gameConfig = RealtimeData.getRealtimeData().getGameConfig(response.data.gameId);
+			logger.info("CreateRoomAction message : "+message);
 			session.setMaxIdleTimeout(gameConfig.getMaxIdleTimeout());
 			Room existRoom = RealtimeData.getRealtimeData().getRoom(session);
-			if(existRoom!=null) {
+			if (existRoom != null) {
 				sendErrorResponse(message, session);
 				return;
 			}
-			Room newRoom = new Room(roomId,response.gameId + "|" + response.matchKey, player, gameConfig.getMaxAllowedPlayers());
+			Room newRoom = new Room(roomId, response.data.gameId + "|" + response.data.filter, player, gameConfig.getMaxAllowedPlayers());
 			RealtimeData.getRealtimeData().addRoom(newRoom);
 			sendResponseOfRoomCreation(player, newRoom);
 		} catch (IOException e) {
@@ -44,23 +44,27 @@ public class CreateRoomAction {
 			sendErrorResponse(message, session);
 		}
 	}
-	
+
 	public void sendErrorResponse(String message, Session session) {
-		ErrorResponse response = new Gson().fromJson(message, ErrorResponse.class);
-		response.action = MultiplayerActionType.ERROR;
-		response.error = MultiplayerActionType.CREATEROOM;
+		CreateRoomResponse response = new CreateRoomResponse();
+		response.action = MultiplayerActionType.CREATE_ROOM;
+		response.status.success = false;
+		response.status.message = "Unable to create room";
 		String responseString = new Gson().toJson(response);
-		logger.info("sendResponseOfUserExit : " + responseString);
+		logger.info("sendResponseOfError : " + responseString);
 		session.getAsyncRemote().sendText(responseString);
 	}
-	
+
 	private void sendResponseOfRoomCreation(Player player, Room newRoom) throws IOException {
-		RoomResponse response = new RoomResponse();
-		response.action = MultiplayerActionType.CREATEROOM;
+		CreateRoomResponse response = new CreateRoomResponse();
+		response.messageType = "GAME";
+		response.action = MultiplayerActionType.CREATE_ROOM;
+		response.status.success = true;
+		response.status.message = "Room Created Successfully";
 		response.roomId = newRoom.getRoomId();
-		response.playerDetails.id = player.getId();
-		response.playerDetails.name = player.getName();
-		response.playerDetails.moreDetails = player.getMoreDetails();
+		response.user.id = player.getId();
+		response.user.name = player.getName();
+		response.user.properties = player.getMoreDetails();
 		String responseString = new Gson().toJson(response);
 		logger.info("sendResponseOfRoomCreation : " + responseString);
 		player.getSession().getAsyncRemote().sendText(responseString);

@@ -7,12 +7,13 @@ import java.util.logging.Logger;
 
 import javax.websocket.Session;
 
+import com.bsb.games.multiplayer.actiondata.MatchRoomRequest;
 import com.bsb.games.multiplayer.bots.PlayerBot;
 import com.bsb.games.multiplayer.properties.Player;
 import com.bsb.games.multiplayer.properties.RealtimeData;
 import com.bsb.games.multiplayer.properties.Room;
-import com.bsb.games.multiplayer.response.ErrorResponse;
 import com.bsb.games.multiplayer.response.MatchRoomResponse;
+import com.bsb.games.multiplayer.response.MultiplayerActionType;
 import com.bsb.games.multiplayer.response.PlayerDetails;
 import com.google.gson.Gson;
 
@@ -21,15 +22,15 @@ public class MatchMakeAction {
 	private Logger logger = Logger.getLogger(this.getClass().getName());
 
 	public void onMessage(final String message, final Session session) {
-		final MatchRoomResponse response = new Gson().fromJson(message, MatchRoomResponse.class);
-		final Player player = new Player(response.playerDetails.id, response.playerDetails.name, session);
-		if (response.playerDetails.moreDetails != null) {
-			player.setMoreDetails(response.playerDetails.moreDetails);
+		final MatchRoomRequest response = new Gson().fromJson(message, MatchRoomRequest.class);
+		final Player player = new Player(response.data.user.id, response.data.user.name, session);
+		if (response.data.user.properties != null) {
+			player.setMoreDetails(response.data.user.properties);
 		}
 		logger.info("matchmake");
 		try {
-			Room room = RealtimeData.getRealtimeData().addPlayerToAvailableRoom(response.gameId, response.gameId + "|" + response.matchMakeKey,
-					player);
+			Room room = RealtimeData.getRealtimeData().addPlayerToAvailableRoom(response.data.gameId,
+					response.data.gameId + "|" + response.data.filter, player);
 			if (room != null) { // match making done
 				for (Player currentPlayer : room.getPlayers()) {
 					sendResponseOfMatchMakeDone(room, currentPlayer);
@@ -45,7 +46,8 @@ public class MatchMakeAction {
 
 					@Override
 					public void run() {
-						Room availableRoom = RealtimeData.getRealtimeData().getAvailableRoom(response.gameId + "|" + response.matchMakeKey, player);
+						Room availableRoom = RealtimeData.getRealtimeData().getAvailableRoom(response.data.gameId + "|" + response.data.filter,
+								player);
 						if (availableRoom == null) {
 							return;
 						}
@@ -99,27 +101,27 @@ public class MatchMakeAction {
 	}
 
 	public void sendErrorResponse(String message, Session session) {
-		ErrorResponse response = new Gson().fromJson(message, ErrorResponse.class);
-		response.action = MultiplayerActionType.ERROR;
-		response.error = MultiplayerActionType.MATCHMAKE;
+		MatchRoomResponse response = new MatchRoomResponse();
+		response.action = MultiplayerActionType.MATCH_MAKE;
+		response.status.success = false;
+		response.status.message = "Unable to make any match";
 		String responseString = new Gson().toJson(response);
-		logger.info("sendResponseOfUserExit : " + responseString);
+		logger.info("sendResponseOfError : " + responseString);
 		session.getAsyncRemote().sendText(responseString);
 	}
 
 	public void sendResponseOfMatchMakeDone(Room room, Player currentPlayer) {
 		MatchRoomResponse response = new MatchRoomResponse();
-		response.action = MultiplayerActionType.MATCHMAKE;
-		response.roomId = room.getRoomId();
-		response.playerDetails.id = currentPlayer.getId();
-		response.playerDetails.name = currentPlayer.getName();
-		response.playerDetails.moreDetails = currentPlayer.getMoreDetails();
+		response.action = MultiplayerActionType.MATCH_MAKE;
+		response.status.message = "Match successfully made";
+		response.status.success = true;
+		response.payload.roomId = room.getRoomId();
 
 		for (Player player : room.getPlayers()) {
 			PlayerDetails playerDetails = new PlayerDetails();
 			playerDetails.id = player.getId();
 			playerDetails.name = player.getName();
-			response.roomPlayers.add(playerDetails);
+			response.payload.participants.add(playerDetails);
 		}
 
 		for (PlayerBot bot : room.getBots()) {
@@ -129,8 +131,8 @@ public class MatchMakeAction {
 			PlayerDetails playerDetails = new PlayerDetails();
 			playerDetails.id = bot.getBotPlayer().id;
 			playerDetails.name = bot.getBotPlayer().name;
-			playerDetails.moreDetails = bot.getBotPlayer().moreDetails;
-			response.roomPlayers.add(playerDetails);
+			playerDetails.properties = bot.getBotPlayer().properties;
+			response.payload.participants.add(playerDetails);
 		}
 
 		String responseString = new Gson().toJson(response);

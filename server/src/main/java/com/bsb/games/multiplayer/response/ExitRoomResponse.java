@@ -1,12 +1,15 @@
 package com.bsb.games.multiplayer.response;
 
-import com.bsb.games.multiplayer.actions.MultiplayerActionType;
+import java.util.ArrayList;
+import java.util.List;
 
+public class ExitRoomResponse extends ActionResponse {
+	public PayloadBean payload = new PayloadBean();
 
-public class ExitRoomResponse {
-	public String roomId;
-	public MultiplayerActionType action;
-	public String gameId;
-	public PlayerDetails playerDetails = new PlayerDetails();
-
+	public static class PayloadBean {
+		public PlayerDetails leavingPlayer = new PlayerDetails();
+		public List<PlayerDetails> participants = new ArrayList<PlayerDetails>();
+		public String roomId;
+		public MultiplayerActionType type = MultiplayerActionType.EXIT_ROOM;
+	}
 }

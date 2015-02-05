@@ -17,7 +17,6 @@ import com.bsb.games.multiplayer.RealtimeMultiplayerClient;
 import com.bsb.games.multiplayer.RealtimeMultiplayerClient.RealtimeMultiplayerEvents;
 import com.bsb.games.multiplayer.response.MultiplayerActionType;
 import com.bsb.games.multiplayer.response.PlayerDetails;
-import com.bsb.games.multiplayer.response.RoomResponse;
 
 public class MultiplayerTestActivity extends Activity implements OnClickListener {
 	private String TAG = getClass().getSimpleName();
@@ -40,7 +39,7 @@ public class MultiplayerTestActivity extends Activity implements OnClickListener
 		findViewById(R.id.disconnectButton).setOnClickListener(this);
 
 		player.id = UUID.randomUUID().toString();
-		player.name = "Susheel";
+		player.name = android.os.Build.MODEL;
 		try {
 			client = new RealtimeMultiplayerClient(this, "99", player, new RealtimeMultiplayerEvents() {
 
@@ -97,9 +96,6 @@ public class MultiplayerTestActivity extends Activity implements OnClickListener
 
 	@Override
 	public void onClick(View view) {
-		final RoomResponse response = new RoomResponse();
-		response.playerDetails.id = "BSB|123432123421";
-		response.playerDetails.name = "Susheel";
 		try {
 			switch (view.getId()) {
 			case R.id.createRoomButton:

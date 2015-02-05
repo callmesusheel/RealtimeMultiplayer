@@ -32,7 +32,7 @@ public class Room {
 			PlayerDetails playerDetails = new PlayerDetails();
 			playerDetails.id = player.getId();
 			playerDetails.name = player.getName();
-			playerDetails.moreDetails = player.getMoreDetails();
+			playerDetails.properties = player.getMoreDetails();
 			playerDetailsList.add(playerDetails);
 		}
 		return playerDetailsList;

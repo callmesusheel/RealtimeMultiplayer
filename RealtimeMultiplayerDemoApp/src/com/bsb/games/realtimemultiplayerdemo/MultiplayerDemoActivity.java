@@ -121,7 +121,7 @@ public class MultiplayerDemoActivity extends Activity implements OnClickListener
 
 						@Override
 						public void onError(MultiplayerActionType type) {
-							if (type.equals(MultiplayerActionType.MATCHMAKE)) {
+							if (type.equals(MultiplayerActionType.MATCH_MAKE)) {
 								if (pdia.isShowing()) {
 									pdia.dismiss();
 								}

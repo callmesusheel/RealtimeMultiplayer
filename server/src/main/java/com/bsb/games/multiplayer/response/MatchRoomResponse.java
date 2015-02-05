@@ -3,16 +3,12 @@ package com.bsb.games.multiplayer.response;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.bsb.games.multiplayer.actions.MultiplayerActionType;
+public class MatchRoomResponse extends ActionResponse {
+	public PayloadBean payload = new PayloadBean();
 
-
-public class MatchRoomResponse {
-
-	public String roomId;
-	public String gameId;
-	public MultiplayerActionType action;
-	public String matchMakeKey;
-	public PlayerDetails playerDetails = new PlayerDetails();
-	public List<PlayerDetails>roomPlayers = new ArrayList<PlayerDetails>();
-
+	public static class PayloadBean {
+		public List<PlayerDetails> participants = new ArrayList<PlayerDetails>();
+		public String roomId;
+		public MultiplayerActionType type = MultiplayerActionType.MATCH_MAKE;
+	}
 }
