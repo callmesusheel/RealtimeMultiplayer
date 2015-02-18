@@ -18,13 +18,9 @@ public class NameGenerator {
 			return getFemaleName();
 		}
 	}
-	
+
 	public static String getCoolNickName() {
-		if (random.nextBoolean()) {
-			return maleFirstNames[random.nextInt(maleFirstNames.length)].toLowerCase();
-		} else {
-			return femaleFirstNames[random.nextInt(femaleFirstNames.length)].toLowerCase();
-		}
+		return coolDisplyName[random.nextInt(coolDisplyName.length)];
 	}
 
 	public static String getMaleName() {
@@ -46,6 +42,39 @@ public class NameGenerator {
 	public static String getLastName() {
 		return lastNames[random.nextInt(lastNames.length)];
 	}
+
+	private static final String[] coolDisplyName = { "aaa", "dsfadf", "FFFF", "name", "username1", "usaaar", "jack23", "suraj05", "MUMMY",
+			"sleepingbeauty", "rocking_rhythm", "my frined", "@auto@", "angryman", "modimerabaap", "KailasH", "INDIAN", "fkpakis", "nrjgame",
+			"iloveyou<3", "chacha", "laughingbudda", "naaani__", "teriMAA", "ajoke", "gr8maratha", "punjabdaputtar", "vjaaayXXX", "susheeel",
+			"indiarocks", "rockstar99", "lovely", "BABY", "luvhurtz", "mera game", "androidfone", "appleiPhone5", "uncle", "TMG", "imran92", "irfan",
+			"ashish87", "cricket", "sachinisgod", "sallubhai89", "srk666", "amirrocks", "kareinailu", "ILU", "thaliavva", "~*hum-tum*~", "myname",
+			"R-U-NUTZ??", "arabSHAIKH", "chotamodi", "shetty", "kejruwins", "XbadmaashX", "(gandabaccha)", "AWSUM_MAN", "majnu", "MaihooDon",
+			"mummy6", "Killer420", "lovelyrose", "Thakur86", "Gabbar01", "Ramukaka", "Sweet16", "maamu", "Lallu", "addy21", "tannu", "Queen", "poo",
+			"$$BanditQueen$$", "virat", "LadyRambo", "amazon", "TheSun", "MaiteraAshiq", "meranaamJOKER", "gadha", "DesiKalakar", "Yoyo",
+			"MeraBharatMahaan", "SalamShab", "{Pavbhajifan}", "ArehYaar", "savitaBhabi ;)", "mera baap chor", "naamMATpoocho", "KHAMOOOSH!",
+			"_I_ SilentKiller _I_", "Smartass:D", "MyTsunami", "unclevamsi", "pandu", "vishesh", "a2z", "chacha89", "STUFF", "kuchbhi",
+			"MAKKHIChuus", "~YouDontSay~", "HamariDadi!!!", "***Pinky***", "Sixer666", "DollarPatel$", "Alphabetagaama", "^gearsofpeace^", "destiny",
+			"Beauty kumari", "gas raj", "JamesBondSingh", "trueOrfalse", "WrongNumber :P", "#####", "%O%", ":$", ":)", "Superman", "::Godofwar::",
+			"Ilovefacebook<3", "selfiefreak", "Metallica", "HeavyMetalfan", "ROXstar69", "madeinchina", "Raju", "misc", "MysteryMan???",
+			"monkey man :3", "Chudail", "Alexanderthegreat", "Chelseaforlife", "facepalm", "nonsense", "sorryshaktiman", "hippo", "lovely",
+			"Partyanimal", "randomname", "(8 malifemastyle 8)", "Worldcup2015", "OMGLUV", "Lovehurts :(((", "Black", "bandar andar", "Crazyfrog81",
+			"SHAITAAAN", "Mastkalandar", "maakaashirwad", "LoveTinyMogul!", "--Pardesi--", "Pyarelal", "|\\ Filmystar //|", "Homesweethome",
+			"shaitan-ki-santaan", "Pehchaankaun", "Alien", "666", "777", "UFO", "Jadoooo", "Kungfu Panda", "princess", "rajkumari", "maihoofairy",
+			"pari", "godzilla", "___i___", "transformers", "Jellies", "ILoveDadivsJellies", "<Contra>", "SoldierMera", "Ninja <>", "Hunk",
+			"puppy_shame :P", "IncredibleHulk", "meowww", "pinky promise!!!", "awwwww", "BILLI :3", "chochweet", "baba", "SAXY_GUY_RAJ", "Crazyguy",
+			"Dil", "brains", "Natwarlal", "Manjunath99", "<<<grrrr>>>", "programmer", "Chal hatt", "hacker@HACK", "Love", "Desiboyz", "Pepsiluver",
+			"AlbertPinto", "LabdradorLove", "Sweety4U", "bowbow", "Atamaajisatakli", "Khallas", "Ayyorama", "tanuj98", "RodiesX", "roadie-4-lyf",
+			"Johnny Walker", "Smirnofffan", "Flyhigh", "cool_sprite!", "cooldude69", "Eknumber", "FINALFANTASY", "Steampunk", "fantasychips22",
+			"Goatie", "karen arjun", "fineguy_ashish32", "nrsweetineha91", "BHARAT!", "~dolly*sweety93~", "Dhoommachale", "deewaneparwane",
+			"FRANDSHIPKARO", "Babydoll36", "pink@love", "ZmanZ", "GOT", "answerTolife", "Ranbir_x_kat", "smileplease :)", "LULZ", "Raj*is*cool",
+			"MahatmaRohit23", "Funnyguy", "USilly", "Breaking_Bad_Meri", "PHOOTI_KISMAT", "Jackpot", "crorepati", "bloodybaby", "Mai tera intenr",
+			"BigbossRox", "internet 123", "123456", "rockonrock", "Callme", "*$*M@yBe*$*", "Tanhadil", "Blue_eyesmeri$", "idontcare", "BADNAAM",
+			"JustChill_raju", "Terenaam", "BeingHuman", "main*teri_dulhan", "kati patang", "DilRooba23", "singham", "!!Saajan!!", "nahiiiiiii", "NO",
+			"I*am#awesome@21", "NONAME", "NAMO", "bjpRulz", "Needfor speed", "Honda4life", "Sunny&Bunny^_^", "PagalGuy28", "Haanji", "Jeehaaaaa",
+			"nafees18", "BASS!", "Abtakchappan", "Baccha2", "CHOTU ! ! !", "PapateraBaap", "MeraNaam_Poo", "Baby*babli*32", "Smoke*killer12", "PK",
+			"pk hai kya?", "GAYMER", "gamer-4-lyf", "DragonHood", "Ragini_MMS*", "haramKHOR", "masti_khor", "Renegade", "Silent_killer40",
+			"Kismatwala", "ChammakChallo111", "Chennai Express", "funny punk", "|||Robinhood>", "$unnyJI", "CRazzzzay", "Vixen", "Hot$Hot",
+			"GearScore", "crazy boi", "GiZm0F0rever" };
 
 	private static final String[] maleFirstNames = { "Abhaya", "Abhimanyu", "Acharya", "Achir", "Adharma", "Adi", "Aditya", "Adri", "Agastya",
 			"Agneya", "Agni", "Agnimukha", "Ahjaja", "Ahriman", "Airavata", "Aja", "Ajay", "Akshobhya", "Alagan", "Amal", "Ameretat", "Amil",

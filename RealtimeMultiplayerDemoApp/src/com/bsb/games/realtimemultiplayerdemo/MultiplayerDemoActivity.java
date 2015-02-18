@@ -107,7 +107,7 @@ public class MultiplayerDemoActivity extends Activity implements OnClickListener
 						@Override
 						public void onConnected() {
 							try {
-								client.matchMake("test");
+								client.matchMake("test123");
 							} catch (Exception e) {
 								e.printStackTrace();
 								Toast.makeText(getApplicationContext(), "Error : " + e.getMessage(), Toast.LENGTH_SHORT).show();

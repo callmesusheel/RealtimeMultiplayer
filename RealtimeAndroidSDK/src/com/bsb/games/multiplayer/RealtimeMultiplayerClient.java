@@ -9,6 +9,8 @@ import java.util.TimerTask;
 import android.app.Activity;
 import android.content.Context;
 import android.content.res.Resources;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Handler;
 import android.util.Log;
 
@@ -60,16 +62,11 @@ public class RealtimeMultiplayerClient {
 	private boolean isConnected;
 	private String roomId;
 	private String gameId;
-
 	private List<PlayerBot> botPlayers;
 	private int botMatchDelay = 0;
-
 	private boolean isBotPlaying = false;
-
 	private List<ChatMessage> chatMessages = new ArrayList<RealtimeMultiplayerClient.ChatMessage>();
-
 	private final long pingInterval = 60000; // 1 minute
-
 	private long lastPingResponse;
 	private ChatDialog dialog;
 
@@ -227,8 +224,8 @@ public class RealtimeMultiplayerClient {
 
 					@Override
 					public void onMessage(byte[] data) {
-						Log.d(TAG, "Message : " + new String(data));
-
+						String response = new String(data);
+						onMessage(response);
 					}
 
 					@Override
@@ -244,7 +241,6 @@ public class RealtimeMultiplayerClient {
 
 							@Override
 							public void run() {
-								Log.d(TAG, "onDisconnect() calling callback.onDisconnected()");
 								callback.onDisconnected();
 							}
 						});
@@ -262,8 +258,11 @@ public class RealtimeMultiplayerClient {
 
 							@Override
 							public void run() {
-								if (error.getMessage().contains("ECONNREFUSED")) {
-									Log.d(TAG, "onError() calling callback.onDisconnected()");
+								if (error != null && error.getMessage() != null && error.getMessage().contains("ECONNREFUSED")) {
+									if (!isConnected) { // return if not
+														// connected
+										return;
+									}
 									callback.onDisconnected();
 								}
 							}
@@ -271,6 +270,44 @@ public class RealtimeMultiplayerClient {
 					}
 
 				}, null);
+	}
+
+	private void connectToBotIfNetworkUnavailable() {
+		if (isNetworkAvailable()) {
+			if (botMatchDelay == 0) {
+				return;
+			}
+			new java.util.Timer().schedule(new TimerTask() {
+
+				@Override
+				public void run() {
+					// Still not part of a room, so match the player with a
+					// bot
+					if (getRoomId() == null || !isConnected) {
+						try {
+							client.disconnect();
+							Log.d(TAG, "connectToBotIfNetworkUnavailable()");
+							activity.runOnUiThread(new Runnable() {
+
+								@Override
+								public void run() {
+									isConnected = true;
+									callback.onConnected();
+								}
+							});
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+				}
+			}, 4 * 1000);
+		}
+	}
+
+	private boolean isNetworkAvailable() {
+		ConnectivityManager connectivityManager = (ConnectivityManager) activity.getSystemService(Context.CONNECTIVITY_SERVICE);
+		NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+		return activeNetworkInfo != null && activeNetworkInfo.isConnected();
 	}
 
 	public void matchMake(String key) throws Exception {
@@ -540,7 +577,6 @@ public class RealtimeMultiplayerClient {
 	private void removeBotRoom() {
 		Log.d(TAG, "Removing bot room");
 		setRoomId(null);
-		botPlayers = null;
 		isBotPlaying = false;
 		callback.onDisconnected();
 	}
