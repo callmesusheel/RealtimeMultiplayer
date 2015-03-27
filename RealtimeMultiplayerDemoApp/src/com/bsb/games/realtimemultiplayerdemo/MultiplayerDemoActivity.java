@@ -17,8 +17,8 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.bsb.games.multiplayer.RealtimeMultiplayerClient;
 import com.bsb.games.multiplayer.RealtimeMultiplayerClient.RealtimeMultiplayerEvents;
+import com.bsb.games.multiplayer.RealtimeMultiplayerClient2;
 import com.bsb.games.multiplayer.bots.PlayerBot;
 import com.bsb.games.multiplayer.bots.SDKTestAppBot;
 import com.bsb.games.multiplayer.response.MultiplayerActionType;
@@ -28,7 +28,7 @@ import com.bsb.games.multiplayer.response.PlayerDetails;
 public class MultiplayerDemoActivity extends Activity implements OnClickListener {
 	private String TAG = getClass().getSimpleName();
 	private EditText input;
-	private RealtimeMultiplayerClient client;
+	private RealtimeMultiplayerClient2 client;
 	private PlayerDetails player = new PlayerDetails();
 	private PlayerDetails opponent = new PlayerDetails();
 	private TextView player1TextView;
@@ -58,7 +58,7 @@ public class MultiplayerDemoActivity extends Activity implements OnClickListener
 			List<PlayerBot>botPlayers = new ArrayList<PlayerBot>();
 			SDKTestAppBot testBot = new SDKTestAppBot();
 			botPlayers.add(testBot);
-			client = new RealtimeMultiplayerClient(this, "99", player,botPlayers,10,2,
+			client = new RealtimeMultiplayerClient2(this, "99", player,botPlayers,10,2,
 					new RealtimeMultiplayerEvents() {
 
 						@Override
@@ -106,12 +106,7 @@ public class MultiplayerDemoActivity extends Activity implements OnClickListener
 
 						@Override
 						public void onConnected() {
-							try {
-								client.matchMake("test123");
-							} catch (Exception e) {
-								e.printStackTrace();
-								Toast.makeText(getApplicationContext(), "Error : " + e.getMessage(), Toast.LENGTH_SHORT).show();
-							}
+							
 						}
 
 						@Override
@@ -129,7 +124,7 @@ public class MultiplayerDemoActivity extends Activity implements OnClickListener
 							}
 						}
 					});
-			client.connect();
+			client.matchMake("test123");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

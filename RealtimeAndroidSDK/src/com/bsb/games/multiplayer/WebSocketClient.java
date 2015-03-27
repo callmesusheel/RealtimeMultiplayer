@@ -1,7 +1,9 @@
 package com.bsb.games.multiplayer;
 
+import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
@@ -71,7 +73,7 @@ public class WebSocketClient {
         if (mThread != null && mThread.isAlive()) {
             return;
         }
-
+        Log.d(TAG,"Trying to connect");
         mThread = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -114,8 +116,19 @@ public class WebSocketClient {
                     if (statusLine == null) {
                         throw new HttpException("Received no reply from server.");
                     } else if (statusLine.getStatusCode() != HttpStatus.SC_SWITCHING_PROTOCOLS) {
+                    	Log.d(TAG,"Statuscode : "+statusLine.getStatusCode());
+                        Log.d(TAG,"ReasonPhrase : "+statusLine.getReasonPhrase());
+                        if(statusLine.getStatusCode()==302) {
+                        	String url = getRedirectUrl(readLine(stream));
+                        	mURI = URI.create(url);
+                        	mThread = null;
+                        	connect();
+                        	return;
+                        }
                         throw new HttpResponseException(statusLine.getStatusCode(), statusLine.getReasonPhrase());
                     }
+                    Log.d(TAG,"Statuscode : "+statusLine.getStatusCode());
+                    Log.d(TAG,"ReasonPhrase : "+statusLine.getReasonPhrase());
 
                     // Read HTTP response headers.
                     String line;
@@ -154,11 +167,39 @@ public class WebSocketClient {
                     mListener.onDisconnect(0, "SSL");
 
                 } catch (Exception ex) {
+                	ex.printStackTrace();
                     mListener.onError(ex);
                 }
             }
         });
         mThread.start();
+    }
+    
+    protected String getRedirectUrl(String redirectUrl) {
+    	//Location: http://54.254.79.120:10023/multiplayer/realtime
+
+    	if(redirectUrl.substring(0, 9).contains("Location")) {
+    		redirectUrl = redirectUrl.replace("Location:", "").trim(); //remove "Location"
+    		redirectUrl = redirectUrl.trim();
+    	}
+    	Log.d(TAG,"getRedirectUrl : "+redirectUrl);
+		return redirectUrl;
+	}
+
+	public String readFully(InputStream inputStream, String encoding)
+            throws IOException {
+        return new String(readFully(inputStream), encoding);
+    }    
+
+    private byte[] readFully(InputStream inputStream)
+            throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        byte[] buffer = new byte[1024];
+        int length = 0;
+        while ((length = inputStream.read(buffer)) != -1) {
+            baos.write(buffer, 0, length);
+        }
+        return baos.toByteArray();
     }
 
     public void disconnect() {

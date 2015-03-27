@@ -18,7 +18,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 
-import com.bsb.games.multiplayer.RealtimeMultiplayerClient.ChatMessage;
 import com.bsb.games.multiplayer.response.PlayerDetails;
 
 public class ChatDialog extends Dialog {
@@ -27,6 +26,7 @@ public class ChatDialog extends Dialog {
 	private List<ChatMessage> chatMessages;
 	private Activity activity;
 	private RealtimeMultiplayerClient client;
+	private RealtimeMultiplayerClient2 client2;
 	private ListView chatList;
 	private ChatListAdapter adapter;
 	private PlayerDetails player;
@@ -38,6 +38,14 @@ public class ChatDialog extends Dialog {
 		this.chatMessages = chatMessages;
 		this.activity = activity;
 		this.client = client;
+		this.player = player;
+	}
+	
+	public ChatDialog(Activity activity, RealtimeMultiplayerClient2 client, PlayerDetails player, List<ChatMessage> chatMessages) {
+		super(activity);
+		this.chatMessages = chatMessages;
+		this.activity = activity;
+		this.client2 = client;
 		this.player = player;
 	}
 
@@ -74,7 +82,11 @@ public class ChatDialog extends Dialog {
 			public void onClick(View v) {
 				if (editText.getEditableText().toString() != null && !editText.getEditableText().toString().equals("")) {
 					try {
-						client.sendChatMessage(editText.getEditableText().toString());
+						if(client!=null) {
+							client.sendChatMessage(editText.getEditableText().toString());
+						}else {
+							client2.sendChatMessage(editText.getEditableText().toString());
+						}
 						editText.setText("");
 					} catch (Exception e) {
 						e.printStackTrace();

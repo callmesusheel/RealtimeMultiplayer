@@ -9,7 +9,6 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
-import com.bsb.games.multiplayer.RealtimeMultiplayerClient.ChatMessage;
 import com.bsb.games.multiplayer.response.PlayerDetails;
 
 public class ChatListAdapter extends ArrayAdapter<ChatMessage> {

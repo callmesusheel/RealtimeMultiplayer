@@ -13,15 +13,15 @@ import android.view.View.OnClickListener;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import com.bsb.games.multiplayer.RealtimeMultiplayerClient;
 import com.bsb.games.multiplayer.RealtimeMultiplayerClient.RealtimeMultiplayerEvents;
+import com.bsb.games.multiplayer.RealtimeMultiplayerClient2;
 import com.bsb.games.multiplayer.response.MultiplayerActionType;
 import com.bsb.games.multiplayer.response.PlayerDetails;
 
 public class MultiplayerTestActivity extends Activity implements OnClickListener {
 	private String TAG = getClass().getSimpleName();
 	private EditText input;
-	private RealtimeMultiplayerClient client;
+	private RealtimeMultiplayerClient2 client;
 	private PlayerDetails player = new PlayerDetails();
 
 	@Override
@@ -41,7 +41,7 @@ public class MultiplayerTestActivity extends Activity implements OnClickListener
 		player.id = UUID.randomUUID().toString();
 		player.name = android.os.Build.MODEL;
 		try {
-			client = new RealtimeMultiplayerClient(this, "99", player, new RealtimeMultiplayerEvents() {
+			client = new RealtimeMultiplayerClient2(this, "99", new RealtimeMultiplayerEvents() {
 
 				@Override
 				public void onRoomUpdated(String roomId, final List<PlayerDetails> players) {
@@ -83,7 +83,7 @@ public class MultiplayerTestActivity extends Activity implements OnClickListener
 					Toast.makeText(getApplicationContext(), "Error in : "+type, Toast.LENGTH_SHORT).show();
 				}
 			});
-			client.connect();
+			client.setPlayerDetails(player.name, player.id, null);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -134,7 +134,7 @@ public class MultiplayerTestActivity extends Activity implements OnClickListener
 				client.matchMake("test");
 				break;
 			case R.id.chatButton:
-				client.openChatRoom();
+//				client.openChatRoom();
 				break;
 			case R.id.disconnectButton:
 				client.disconnect();
@@ -164,6 +164,7 @@ public class MultiplayerTestActivity extends Activity implements OnClickListener
 	protected void onStop() {
 		super.onStop();
 		if (client != null && client.isConnected()) {
+			Log.d(TAG,"Disconnect");
 			client.disconnect();
 		}
 	}

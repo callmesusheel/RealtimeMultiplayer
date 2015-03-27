@@ -7,14 +7,16 @@ import java.util.Map;
 import java.util.TimerTask;
 import java.util.UUID;
 
+import org.apache.http.message.BasicNameValuePair;
+
 import android.app.Activity;
 import android.content.Context;
 import android.content.res.Resources;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.os.Handler;
 import android.util.Log;
 
+import com.bsb.games.multiplayer.RealtimeMultiplayerClient.RealtimeMultiplayerEvents;
+import com.bsb.games.multiplayer.WebSocketClient.Listener;
 import com.bsb.games.multiplayer.actiondata.ActionRequest;
 import com.bsb.games.multiplayer.actiondata.CreateRoomRequest;
 import com.bsb.games.multiplayer.actiondata.DisconnectRequest;
@@ -35,26 +37,7 @@ import com.bsb.games.multiplayer.response.PlayerDetails;
 import com.bsb.games.multiplayer.response.SendMessageResponse;
 import com.google.gson.Gson;
 
-public class RealtimeMultiplayerClient {
-
-	public interface RealtimeMultiplayerEvents {
-
-		public void onMessage(PlayerDetails player, byte[] data);
-
-		public void onChatMessage(PlayerDetails player, byte[] data);
-
-		public void onMatchMakingDone(String roomId, List<PlayerDetails> players);
-
-		public void onPlayerLeaveRoom(String roomId, PlayerDetails player);
-
-		public void onRoomUpdated(String roomId, List<PlayerDetails> players);
-
-		public void onConnected();
-
-		public void onDisconnected();
-
-		public void onError(MultiplayerActionType type);
-	}
+public class RealtimeMultiplayerClient2 {
 
 	private Activity activity;
 	private RealtimeMultiplayerEvents callback;
@@ -68,31 +51,34 @@ public class RealtimeMultiplayerClient {
 	private int botMatchDelay = 0;
 	private boolean isBotPlaying = false;
 	private List<ChatMessage> chatMessages = new ArrayList<ChatMessage>();
-	private final long pingInterval = 60000; // 1 minute
+	private final long pingInterval = 30000; // 1/2 minute
 	private long lastPingResponse;
 	private ChatDialog dialog;
-
+	private List<BasicNameValuePair> headers = new ArrayList<BasicNameValuePair>();
+	
+	private String getRoomId() {
+		return roomId;
+	}
+	
+	private void setRoomId(String roomId) {
+		this.roomId = roomId;
+	}
+	
+	private enum ConnectActionType {
+		MATCHMAKE,CREATEROOM,JOINROOM,
+	}
+	
 	public boolean isConnected() {
 		return isConnected;
 	}
 
-	private void setRoomId(String roomId) {
-		this.roomId = roomId;
-	}
-
-	private String getRoomId() {
-		return roomId;
-	}
-
-	public RealtimeMultiplayerClient(Activity activity, String gameId, PlayerDetails player, RealtimeMultiplayerEvents callback) {
+	public RealtimeMultiplayerClient2(Activity activity, String gameId, RealtimeMultiplayerEvents callback) {
 		this.activity = activity;
 		this.callback = callback;
-		this.player = player;
 		this.gameId = gameId;
-		init();
 	}
 
-	public RealtimeMultiplayerClient(Activity activity, String gameId, PlayerDetails player, List<PlayerBot> botPlayers, int botMatchDelay,
+	public RealtimeMultiplayerClient2(Activity activity, String gameId, PlayerDetails player, List<PlayerBot> botPlayers, int botMatchDelay,
 			int minPlayersNeeded, RealtimeMultiplayerEvents callback) {
 		this.activity = activity;
 		this.callback = callback;
@@ -100,7 +86,6 @@ public class RealtimeMultiplayerClient {
 		this.gameId = gameId;
 		this.botPlayers = botPlayers;
 		this.botMatchDelay = botMatchDelay;
-		init();
 	}
 
 	public void setPlayerDetails(String name, String id, Map<String, String> moreDetails) {
@@ -110,26 +95,21 @@ public class RealtimeMultiplayerClient {
 		this.player.properties = moreDetails;
 	}
 
-	public void init() {
+	private void connectAction(final ConnectActionType connectActionType,final String extraParam) {
+		Log.d(TAG,"connectAction : "+connectActionType);
 		client = new WebSocketClient(URI.create(activity.getResources().getString(getResourceIdByName(activity, "string", "server_link"))),
-				new WebSocketClient.Listener() {
+				new Listener() {
 
 					@Override
-					public void onConnect() {
-						Log.d(TAG, "Connected");
-						isConnected = true;
-//						handler.postDelayed(runable, pingInterval);
-						lastPingResponse = System.currentTimeMillis();
-						activity.runOnUiThread(new Runnable() {
-							@Override
-							public void run() {
-								callback.onConnected();
-							}
-						});
+					public void onMessage(byte[] data) {
+						Log.d(TAG,"onMessage and data in byte[]");
+						String response = new String(data);
+						onMessage(response);
 					}
 
 					@Override
 					public void onMessage(String message) {
+
 						Log.d(TAG, "Message : " + message);
 						final ActionResponse response = new Gson().fromJson(message, ActionResponse.class);
 						switch (response.action) {
@@ -147,7 +127,7 @@ public class RealtimeMultiplayerClient {
 									}
 								});
 							} else {
-								callback.onError(MultiplayerActionType.CREATE_ROOM);
+								sendErrorCallback(MultiplayerActionType.CREATE_ROOM);
 							}
 							break;
 						case EXIT_ROOM:
@@ -175,7 +155,7 @@ public class RealtimeMultiplayerClient {
 									}
 								});
 							} else {
-								callback.onError(MultiplayerActionType.JOIN_ROOM);
+								sendErrorCallback(MultiplayerActionType.JOIN_ROOM);
 							}
 							break;
 						case MATCH_MAKE:
@@ -190,7 +170,7 @@ public class RealtimeMultiplayerClient {
 									}
 								});
 							} else {
-								callback.onError(MultiplayerActionType.MATCH_MAKE);
+								sendErrorCallback(MultiplayerActionType.MATCH_MAKE);
 							}
 							break;
 						case PING:
@@ -206,7 +186,7 @@ public class RealtimeMultiplayerClient {
 										chatMessages.add(new ChatMessage(sendMessageResponse.payload.sender, new String(
 												sendMessageResponse.payload.data)));
 										if (dialog != null && dialog.isShowing()) {
-											dialog.setChatMessages(chatMessages);
+//											dialog.setChatMessages(chatMessages);
 										}
 										callback.onChatMessage(sendMessageResponse.payload.sender, sendMessageResponse.payload.data);
 									} else {
@@ -221,31 +201,7 @@ public class RealtimeMultiplayerClient {
 						default:
 							break;
 						}
-					}
-
-					@Override
-					public void onMessage(byte[] data) {
-						Log.d(TAG,"onMessage and data in byte[]");
-						String response = new String(data);
-						onMessage(response);
-					}
-
-					@Override
-					public void onDisconnect(int code, String reason) {
-						Log.d(TAG, "Disconnected : " + code + ". Reason : " + reason);
-						Log.d(TAG, "RoomId : " + getRoomId());
-						if (getRoomId() != null && getRoomId().equals("botRoom")) {
-							Log.d(TAG, "onDisconnect() returning from here");
-							return;
-						}
-						isConnected = false;
-						activity.runOnUiThread(new Runnable() {
-
-							@Override
-							public void run() {
-								callback.onDisconnected();
-							}
-						});
+					
 					}
 
 					@Override
@@ -271,48 +227,119 @@ public class RealtimeMultiplayerClient {
 						});
 					}
 
-				}, null);
-	}
+					@Override
+					public void onDisconnect(int code, String reason) {
+						if (getRoomId() != null && getRoomId().equals("botRoom")) {
+							Log.d(TAG, "onDisconnect() returning from here");
+							return;
+						}
+						isConnected = false;
+						activity.runOnUiThread(new Runnable() {
 
-	private void connectToBotIfNetworkUnavailable() {
-		if (isNetworkAvailable()) {
-			if (botMatchDelay == 0) {
-				return;
-			}
-			new java.util.Timer().schedule(new TimerTask() {
+							@Override
+							public void run() {
+								callback.onDisconnected();
+							}
+						});
+					}
 
-				@Override
-				public void run() {
-					// Still not part of a room, so match the player with a
-					// bot
-					if (getRoomId() == null || !isConnected) {
-						try {
-							client.disconnect();
-							Log.d(TAG, "connectToBotIfNetworkUnavailable()");
-							activity.runOnUiThread(new Runnable() {
-
-								@Override
-								public void run() {
-									isConnected = true;
-									callback.onConnected();
-								}
-							});
-						} catch (Exception e) {
-							e.printStackTrace();
+					@Override
+					public void onConnect() {
+						isConnected = true;
+						handler.postDelayed(runable, pingInterval);
+						lastPingResponse = System.currentTimeMillis();
+						switch (connectActionType) {
+						case CREATEROOM:
+							try {
+								createRoomAction(extraParam);
+							} catch (Exception e1) {
+								e1.printStackTrace();
+								sendErrorCallback(MultiplayerActionType.CREATE_ROOM);
+							}
+							break;
+						case JOINROOM:
+							try {
+								joinRoomAction(extraParam);
+							} catch (Exception e1) {
+								e1.printStackTrace();
+								sendErrorCallback(MultiplayerActionType.CREATE_ROOM);
+							}
+							break;
+						case MATCHMAKE:
+							try {
+								matchMakeAction(extraParam);
+							} catch (Exception e3) {
+								e3.printStackTrace();
+								sendErrorCallback(MultiplayerActionType.MATCH_MAKE);
+							}
+							break;
 						}
 					}
-				}
-			}, 4 * 1000);
+				}, headers);
+		
+		client.connect();
+	}
+	
+	public void matchMake(String key) {
+		connectAction(ConnectActionType.MATCHMAKE, key);
+	}
+	
+	public void joinRoom(String joinRoomId) {
+		Log.d(TAG,"RoomId : "+joinRoomId);
+		connectAction(ConnectActionType.JOINROOM, joinRoomId);
+		for(String str : joinRoomId.split("\\|")) {
+			Log.d(TAG,"Str : "+str);
+		}
+		String hostId = joinRoomId.split("\\|")[0];
+		Log.d(TAG,"Header added : "+hostId);
+		headers.add(new BasicNameValuePair("hostAddress", hostId));
+	}
+	
+	public void createRoom(String key) {
+		connectAction(ConnectActionType.CREATEROOM, key);
+	}
+	
+	private void joinRoomAction(String joiningRoomId) throws Exception {
+		try {
+			if (getRoomId() != null && !getRoomId().equals("")) {
+				Log.d(TAG, "Player is already part of a room");
+				throw new Exception("Player is already part of a room");
+			} else {
+				JoinRoomRequest joinRoomRequest = new JoinRoomRequest();
+				joinRoomRequest.user = player;
+				joinRoomRequest.type = MultiplayerActionType.JOIN_ROOM;
+				joinRoomRequest.gameId = gameId;
+				joinRoomRequest.roomId = joiningRoomId;
+				ActionRequest request = new ActionRequest();
+				request.data = joinRoomRequest;
+				client.send(new Gson().toJson(request));
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 
-	private boolean isNetworkAvailable() {
-		ConnectivityManager connectivityManager = (ConnectivityManager) activity.getSystemService(Context.CONNECTIVITY_SERVICE);
-		NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
-		return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+	private void createRoomAction(String key) throws Exception {
+		try {
+			if (getRoomId() != null && !getRoomId().equals("")) {
+				Log.d(TAG, "Player is already part of a room");
+				throw new Exception("Player is already part of a room");
+			} else {
+				CreateRoomRequest createRoomRequest = new CreateRoomRequest();
+				createRoomRequest.type = MultiplayerActionType.CREATE_ROOM;
+				createRoomRequest.gameId = gameId;
+				createRoomRequest.filter = key;
+				createRoomRequest.user = player;
+				ActionRequest request = new ActionRequest();
+				request.data = createRoomRequest;
+				client.send(new Gson().toJson(request));
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
-
-	public void matchMake(String key) throws Exception {
+	
+	private void matchMakeAction(String key) throws Exception {
 		try {
 			if (getRoomId() != null && !getRoomId().equals("")) {
 				Log.d(TAG, "Player is already part of a room");
@@ -373,13 +400,9 @@ public class RealtimeMultiplayerClient {
 			e.printStackTrace();
 		}
 	}
-
-	public void connect() {
-		Log.d(TAG,"connect()");
-		client.connect();
-	}
-
+	
 	public void disconnect() {
+		Log.d(TAG, "disconnect()");
 		try {
 			if (isBotPlaying) {
 				for (PlayerBot botPlayer : botPlayers) {
@@ -388,7 +411,6 @@ public class RealtimeMultiplayerClient {
 				removeBotRoom();
 				return;
 			}
-			Log.d(TAG, "disconnect()");
 			DisconnectRequest disconnectRequest = new DisconnectRequest();
 			disconnectRequest.type = MultiplayerActionType.DISCONNECT;
 			disconnectRequest.gameId = gameId;
@@ -475,46 +497,6 @@ public class RealtimeMultiplayerClient {
 		}
 	}
 
-	public void joinRoom(String joiningRoomId) throws Exception {
-		try {
-			if (getRoomId() != null && !getRoomId().equals("")) {
-				Log.d(TAG, "Player is already part of a room");
-				throw new Exception("Player is already part of a room");
-			} else {
-				JoinRoomRequest joinRoomRequest = new JoinRoomRequest();
-				joinRoomRequest.user = player;
-				joinRoomRequest.type = MultiplayerActionType.JOIN_ROOM;
-				joinRoomRequest.gameId = gameId;
-				joinRoomRequest.roomId = joiningRoomId;
-				ActionRequest request = new ActionRequest();
-				request.data = joinRoomRequest;
-				client.send(new Gson().toJson(request));
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
-	public void createRoom(String key) throws Exception {
-		try {
-			if (getRoomId() != null && !getRoomId().equals("")) {
-				Log.d(TAG, "Player is already part of a room");
-				throw new Exception("Player is already part of a room");
-			} else {
-				CreateRoomRequest createRoomRequest = new CreateRoomRequest();
-				createRoomRequest.type = MultiplayerActionType.CREATE_ROOM;
-				createRoomRequest.gameId = gameId;
-				createRoomRequest.filter = key;
-				createRoomRequest.user = player;
-				ActionRequest request = new ActionRequest();
-				request.data = createRoomRequest;
-				client.send(new Gson().toJson(request));
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
 	public void leaveRoom() throws Exception {
 		try {
 			if (isBotPlaying) {
@@ -542,7 +524,7 @@ public class RealtimeMultiplayerClient {
 		}
 		setRoomId(null);
 	}
-
+	
 	final Handler handler = new Handler();
 	Runnable runable = new Runnable() {
 
@@ -554,6 +536,7 @@ public class RealtimeMultiplayerClient {
 						client.disconnect();
 						return;
 					}
+					Log.d(TAG,"sending ping message");
 					PingRequest pingRequest = new PingRequest();
 					pingRequest.type = MultiplayerActionType.PING;
 					ActionRequest request = new ActionRequest();
@@ -568,7 +551,7 @@ public class RealtimeMultiplayerClient {
 			}
 		}
 	};
-
+	
 	private List<PlayerDetails> getBotsAsPlayers() {
 		List<PlayerDetails> playerDetailsList = new ArrayList<PlayerDetails>();
 		for (PlayerBot bot : botPlayers) {
@@ -582,7 +565,13 @@ public class RealtimeMultiplayerClient {
 		Log.d(TAG, "Removing bot room");
 		setRoomId(null);
 		isBotPlaying = false;
-		callback.onDisconnected();
+		activity.runOnUiThread(new Runnable() {
+			
+			@Override
+			public void run() {
+				callback.onDisconnected();	
+			}
+		});
 	}
 
 	public static int getResourceIdByName(Context context, String className, String name) {
@@ -591,5 +580,15 @@ public class RealtimeMultiplayerClient {
 		int resource = res.getIdentifier(name, className, packageName);
 		return resource;
 	}
-
+	
+	private void sendErrorCallback(final MultiplayerActionType type) {
+		activity.runOnUiThread(new Runnable() {
+			
+			@Override
+			public void run() {
+				callback.onError(type);
+			}
+		});
+	}
+	
 }
